@@ -1,0 +1,18 @@
+# Core Framework
+fastapi==0.110.1
+uvicorn[standard]==0.29.0
+
+# PyTorch and Vision Libraries
+torch==2.2.2
+torchvision==0.17.2
+
+# Image Handling
+pillow==10.3.0
+
+# Data Handling
+numpy==1.26.4
+
+# Optional: for training visualization (e.g., in notebooks)
+matplotlib==3.9.0
+
+opencv-python
