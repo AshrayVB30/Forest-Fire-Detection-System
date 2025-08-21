@@ -1,6 +1,3 @@
-Forest Fire Detection System
----
-
 # 🔥 Forest Fire Detection System
 
 An AI-powered **Forest Fire Detection System** that uses **Deep Learning** (ResNet18) to classify images as **Fire** or **No Fire** and visualize the decision process with **Grad-CAM heatmaps**.
