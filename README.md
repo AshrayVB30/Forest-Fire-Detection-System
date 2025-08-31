@@ -116,7 +116,7 @@ The frontend will run at → `http://localhost:8501`
 ---
 ## Workflow Diagram
 
-![img_2.png](img_1.png)
+(![img.png](img_1.png))
 
 ---
 
