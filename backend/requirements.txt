@@ -15,4 +15,12 @@ numpy==1.26.4
 # Optional: for training visualization (e.g., in notebooks)
 matplotlib==3.9.0
 
-opencv-python
+# OpenCV (used for image and video processing)
+opencv-python==4.9.0.80
+
+# Geospatial Data Libraries
+geopandas==0.14.3
+pyogrio==0.7.2
+
+# Progress Bar Utility
+tqdm==4.66.4

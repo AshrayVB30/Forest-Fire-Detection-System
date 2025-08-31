@@ -3,71 +3,109 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms, models
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
+from tqdm import tqdm
 
-# Paths
+# ---------------- CONFIG ----------------
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
-data_dir = os.path.join(project_root, "data", "Image_data", "ForestFireDataset", "train")
+
+# Dataset paths
+train_dir = os.path.join(project_root, "data", "Image_data", "ForestFireDataset", "train")
+test_dir = os.path.join(project_root, "data", "Image_data", "ForestFireDataset", "test")
+
 model_dir = os.path.join(current_dir, "models")
 os.makedirs(model_dir, exist_ok=True)
 
-print(f"Data directory: {data_dir}")
-print(f"Model directory: {model_dir}")
+print(f"Train dir: {train_dir}")
+print(f"Test dir:  {test_dir}")
+print(f"Model dir: {model_dir}")
 
-# Check dataset exists
-if not os.path.exists(data_dir):
-    raise FileNotFoundError(f"Data directory not found: {data_dir}")
+# ---------------- MAIN ----------------
+def main():
+    # ---------------- DATASET ----------------
+    if not os.path.exists(train_dir):
+        raise FileNotFoundError(f"❌ Train data not found at {train_dir}")
 
-# Transforms
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406],
-                         [0.229, 0.224, 0.225])
-])
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406],
+                             [0.229, 0.224, 0.225])
+    ])
 
-# Dataset & Loader
-dataset = datasets.ImageFolder(data_dir, transform=transform)
-print(f"Dataset classes: {dataset.classes}")
-print(f"Dataset size: {len(dataset)}")
+    # Full dataset
+    full_dataset = datasets.ImageFolder(train_dir, transform=transform)
+    print(f"Classes: {full_dataset.classes}")
+    print(f"Total images: {len(full_dataset)}")
 
-dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    # Train/Validation Split
+    val_size = int(0.2 * len(full_dataset))
+    train_size = len(full_dataset) - val_size
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
 
-# Model: Transfer Learning (ResNet18)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Using device: {device}")
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)  # 🔑 num_workers=0 on Windows
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
 
-model = models.resnet18(pretrained=True)
-model.fc = nn.Linear(model.fc.in_features, 2)  # 2 classes: fire, nofire
-model.to(device)
+    # ---------------- MODEL ----------------
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
-# Loss & Optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    model = models.resnet18(pretrained=True)
+    model.fc = nn.Linear(model.fc.in_features, 2)  # fire / no fire
+    model.to(device)
 
-# Training Loop
-epochs = 5
-for epoch in range(epochs):
-    model.train()
-    running_loss, correct = 0.0, 0
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
-    for inputs, labels in dataloader:
-        inputs, labels = inputs.to(device), labels.to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+    # ---------------- TRAINING ----------------
+    epochs = 10
+    best_acc = 0.0
+    model_path = os.path.join(model_dir, "fire_detection_resnet18.pth")
 
-        running_loss += loss.item()
-        correct += (outputs.argmax(1) == labels).sum().item()
+    for epoch in range(epochs):
+        # Training
+        model.train()
+        running_loss, correct = 0.0, 0
+        progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")
+        for inputs, labels in progress_bar:
+            inputs, labels = inputs.to(device), labels.to(device)
 
-    avg_loss = running_loss / len(dataloader)
-    acc = correct / len(dataset)
-    print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}, Acc: {acc:.4f}")
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-# Save model
-model_path = os.path.join(model_dir, "fire_detection_resnet18.pth")
-torch.save(model.state_dict(), model_path)
-print(f"✅ Model saved to: {model_path}")
+            running_loss += loss.item()
+            correct += (outputs.argmax(1) == labels).sum().item()
+
+        train_acc = correct / train_size
+        avg_loss = running_loss / len(train_loader)
+
+        # Validation
+        model.eval()
+        val_correct, val_total = 0, 0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                outputs = model(inputs)
+                val_correct += (outputs.argmax(1) == labels).sum().item()
+                val_total += labels.size(0)
+
+        val_acc = val_correct / val_total
+
+        print(f"Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
+
+        # Save best model
+        if val_acc > best_acc:
+            best_acc = val_acc
+            torch.save(model.state_dict(), model_path)
+            print(f"✅ Saved best model (Val Acc: {val_acc:.4f})")
+
+    print(f"🎉 Training finished. Best Val Acc: {best_acc:.4f}")
+    print(f"📌 Model saved to {model_path}")
+
+
+if __name__ == "__main__":
+    main()

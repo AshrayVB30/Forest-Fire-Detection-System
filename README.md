@@ -10,12 +10,17 @@ The system is built with:
 
 ---
 
-## 🚀 Features
+# 🚀 Features
 
-* ✅ Upload forest images and detect if fire is present.
-* ✅ Real-time predictions using a **PyTorch ResNet18** model.
-* ✅ Class probabilities (**Fire** vs **No Fire**).
-* ✅ Modular backend–frontend architecture.
+✅ Upload forest images and detect if fire is present.
+
+✅ Real-time predictions using a PyTorch ResNet18 model.
+
+✅ Class probabilities (Fire vs No Fire).
+
+✅ Visual explanations with Grad-CAM heatmaps.
+
+✅ Modular architecture with FastAPI backend & Streamlit frontend.
 
 ---
 
@@ -24,24 +29,37 @@ The system is built with:
 ```
 forest-fire-detection/
 │── backend/
-│   ├── app.py                # FastAPI backend
+│   ├── app.py                 # FastAPI backend (inference + heatmaps)
+│   ├── train.py               # Training script (ResNet18 fine-tuning)
 │   ├── main.py
-│   ├── train.py
-│   ├── requirment.txt
-│   └── __init__.py
-│├───data
-│   ├───CSV_data
-│   └───Image_data
-│       └───ForestFireDataset
-│           └───train
-│               ├───fire
-│               └───nofire
-│── frontend/
-│   ├── app.py                # Streamlit frontend
-│   ├── requirment.txt
+│   ├── requirements.txt
 │   └── __init__.py
 │
-│── README.md
+│── data/                       # Datasets
+│   ├── CSV_data/
+│   │   └── india_forest_fires_2000_2025.csv
+│   │
+│   ├── Image_data/
+│   │   └── ForestFireDataset/
+│   │       └── train/
+│   │           ├── fire/
+│   │           └── nofire/
+│   │
+│   └── Maps/
+│       ├── Admin2.cnp
+│       ├── Admin2.dbf
+│       ├── Admin2.prj
+│       ├── Admin2.shp
+│       ├── Admin2.shx
+│       └── india_states.geojson
+│
+│── frontend/
+│   ├── app.py                 # Streamlit frontend (UI)
+│   ├── requirements.txt
+│   └── __init__.py
+│
+└── README.md
+
 ```
 
 ---
@@ -73,7 +91,7 @@ pip install -r requirements.txt
 
 ```bash
 cd forest-fire-detection
-uvicorn app:app --reload
+uvicorn backend.app:app --reload
 ```
 
 The backend will run at → `http://127.0.0.1:8000`
@@ -91,14 +109,14 @@ The frontend will run at → `http://localhost:8501`
 
 ## 🧠 Model Training
 
-* The project uses **ResNet18**.
-* You can either use the provided pre-trained model (`fire_detection_resnet18.pth`) or ImageNet fallback.
-* Training script (to be added soon) can be used for fine-tuning with a forest fire dataset.
-
+* Model: **ResNet18**
+* Dataset: **Forest Fire Dataset (images in data/Image_data/ForestFireDataset/)**
+* Training script: **backend/train.py**
+* Output model is saved in **backend/models/fire_detection_resnet18.pth**
 ---
 ## Workflow Diagram
 
-![img.png](img.png)
+![img_2.png](img_1.png)
 
 ---
 
@@ -117,13 +135,26 @@ See `requirements.txt`:
 * opencv-python
 * streamlit
 * requests
+* plotly
+* geopandas
+* pyogrio
+* tqdm
 
 ---
 
 ## Sample Output
 
-![Output-1](images/local-image.png)
+**Forest Fire Detection Output with Heatmap**
 
-![Output-2](images/img.png)
+(![img.png](img.png))
+
+**Indian Forest Fire Trends (2000–2025)**
+
+![img_2.png](img_2.png)
+
+**Forest Fire Intensity Map (2000–2025)**
+
+![img_3.png](img_3.png)
 
 ---
+⚡ Built with *FastAPI* + *Streamlit* + *PyTorch*
