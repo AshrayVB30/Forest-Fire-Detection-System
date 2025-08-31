@@ -116,7 +116,7 @@ The frontend will run at → `http://localhost:8501`
 ---
 ## Workflow Diagram
 
-(![img.png](img_1.png))
+![img.png](img_1.png)
 
 ---
 
@@ -146,7 +146,7 @@ See `requirements.txt`:
 
 **Forest Fire Detection Output with Heatmap**
 
-(![img.png](img.png))
+![img.png](img.png)
 
 **Indian Forest Fire Trends (2000–2025)**
 
